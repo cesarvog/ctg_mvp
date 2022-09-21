@@ -1,0 +1,75 @@
+<html>
+<head>
+		  <script src="carddb.js" type="text/javascript"></script>
+		  <script src="game.js" type="text/javascript"></script>
+		  <link rel="stylesheet" href="game.css">
+		  <meta charset="UTF-8">
+<div id="snackbar">Some text some message..</div>
+<head>
+<body onload="start()">
+	<div id="table"></div>
+	<div id="hand" style="overflow-y:scroll;overflow-y:auto;height:100%"></div>
+	<div id="hist"><ul></ul></div>
+	<div id="newdice">
+			  <img id="newdice_img" src="img/newdice.png"></img>
+			  <text>1</text>
+			  <button class="inc" type="button" onclick="changeValueNewDice(-1);">-</button>
+			  <button class="inc" type="button" onclick="changeValueNewDice(1);">+</button>
+			  <br>
+			  <button id="d_create" class="create" type="button" onclick="createNewDice();">Criar</button>
+			  <button id="d_cancel" class="create" type="button" onclick="cancelNewDice(this);">Cancelar</button>
+			  <button id="d_delete" class="create" style="display: none;" type="button" onclick="deleteDice(this);">Excluir</button>
+	</div>
+	<div id="card_view" class="card_view">
+		
+	</div>
+	<div id="tokens" class="token_view">
+		<div class="token">
+			<a href="#" onclick="addToken('fire');" alt="Adicionar token de fogo" /><img src="img/tokens/fire.jpg" ></a>
+		</div>
+		<div class="token">
+			<a href="#" onclick="addToken('frost');" alt="Adicionar token de gelo" /><img src="img/tokens/frost.png" ></a>
+		</div>
+		<div class="token">
+			<a href="#" onclick="addToken('poison');" alt="Adicionar token de veneno" /><img src="img/tokens/poison.png" ></a>
+		</div>
+		<div class="token">
+			<a href="#" onclick="addToken('1');" alt="Adicionar token de +1" /><img src="img/tokens/1.png" ></a>
+		</div>
+	</div>
+	<div id="snackbar"></div>
+
+	<div id="icons">
+		<div id="token_icon" class="icon">
+			<a href="#" onclick="showTokens();" alt="Criar tokens" /><img src="img/token.jpg" ></a>
+		</div>
+		<div id="deck_icon" class="icon">
+			<a href="#" onclick="showDeck();" alt="Mostrar deck" /><img src="img/deck.png" ></a>
+		</div>
+		<div id="hist_icon" class="icon">
+			<a href="#" onclick="showHist();" alt="Ver histórico" /><img src="img/hist.jpg" ></a>
+		</div>
+		<div id="coin_icon" class="icon">
+			<a href="#" onclick="throwCoin();" alt="Jogar moeda" /><img src="img/coin.png" ></a>
+		</div>
+		<div id="dice_icon" class="icon">
+			<a href="#" onclick="showNewDice();" alt="Criar novo dado" /><img src="img/dice.png" ></a>
+		</div>
+		<div id="turn_icon" class="icon">
+			<a href="#" onclick="turnCard();" alt="Descer carta" /><img src="img/turn.gif" ></a>
+		</div>
+		<div id="play_icon" class="icon">
+			<a href="#" onclick="playCard();" alt="Descer carta" /><img src="img/push.png" ></a>
+		</div>
+		<div id="table_icon" class="icon">
+			<a href="#" onclick="showTable();" alt="Mostrar mesa" /><img src="img/table.png" ></a>
+		</div>
+		<div id="buy_icon" class="icon">
+			<a href="#" onclick="buyCard();" alt="Comprar carta" /><img src="img/buy.png" ></a>
+		</div>
+		<div id="hand_icon" class="icon">
+			<a href="#" onclick="showHandCards();" alt="Ver mão" /><img src="img/hand.png" ></a>
+		</div>
+	</div>
+</body>
+</html>

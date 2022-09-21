@@ -1,0 +1,216 @@
+
+.card_free {
+		  position: relative;
+		  box-sizing: border-box;  
+		  /*
+		  width: 150px;
+		  */
+		  width: calc(24vh/1.4);
+		  height: 24vh;
+		 /*
+		  height: 214px;
+		  */
+		  margin:10px;
+		  float: left;  
+		  background-color: white;
+		  background-position-x: 0px;
+		  background-position-y: center;
+		  background-repeat: none;
+		  background-position: middle center;  
+		  border: 1px #555555 solid;
+		  border-radius: 10px;
+		    -webkit-box-shadow: 2px 2px 3px 0px #000000; 
+			 box-shadow: 2px 2px 3px 0px #000000; 
+}
+.card_name {
+	text-align: center;
+}
+
+.card_body {
+	margin-left: 5px;
+	bottom: 10;
+	position: absolute;
+}
+.card_atkdef {
+	right: 10;
+	bottom: 10;
+	position: absolute;
+	font-size: 55;
+}
+
+.card_table_turned {
+        -webkit-transform: rotate(90deg);
+        -moz-transform: rotate(90deg);
+        -o-transform: rotate(90deg);
+        transform: rotate(90deg);
+}
+
+.card_table {
+		  box-sizing: border-box;  
+		  position: absolute;
+		  height: 20vh;
+		  width: calc(20vh / 1.4);
+		  background-color: white;
+		  background-position-x: 0px;
+		  background-position-y: center;
+		  background-repeat: none;
+		  background-position: middle center;  
+		  border: 1px #555555 solid;
+		  border-radius: 10px;
+		  -webkit-box-shadow: 2px 2px 3px 0px #000000; 
+		  box-shadow: 2px 2px 3px 0px #000000; 
+}
+
+.card_view {
+		  display: none;
+		  box-sizing: border-box;  
+		  width: 80vw;
+		  height: calc(80vw * 1.4);
+		  margin:10px;
+		  float: left;  
+		  background-color: white;
+		  background-position-x: 0px;
+		  background-position-y: center;
+		  background-repeat: none;
+		  background-position: middle center;  
+		  border: 1px #555555 solid;
+		  border-radius: 10px;
+		  -webkit-box-shadow: 2px 2px 3px 0px #000000; 
+		  box-shadow: 2px 2px 3px 0px #000000; 
+		  position: relative;
+		  font-size: 30px;
+}
+
+.dice_table {
+	position: absolute;
+	background-image: url("img/newdice.png");
+	background-size: 10vw;
+	width: 10vw;
+	height: 10vw;
+}
+.dice_table text {
+    left: 40%;
+    position: absolute;
+    top: 35%;
+}
+
+#icons {
+	position: absolute;
+	float: right;
+	right: 20px;
+	bottom: 20px;
+}
+
+#newdice {
+	position: absolute;
+	display: block;
+	top: 30%;
+	left: 30%;
+	height: 40vh;
+	width: 40vw;
+}
+
+#newdice .inc {
+	height: 10vh;
+	width: 30vw;
+	font-size: 40px;
+}
+#newdice img {
+	padding-left: 8vw;
+}
+#newdice text {
+	position: absolute;
+	left: 119;
+	top: 36;
+	font-size: 30px;
+}
+#newdice .create {
+	height: 10vh;
+	width: 30vw;
+	font-size: 40px;
+}
+
+.icon img {
+	height: 5vh;
+
+}
+
+.icon {
+	padding-top: 50px;
+}
+
+p, div {
+-webkit-user-select: none;  
+ -moz-user-select: none;    
+ -ms-user-select: none;      
+ user-select: none;
+}
+
+#snackbar {
+  visibility: hidden; /* Hidden by default. Visible on click */
+  min-width: 250px; /* Set a default minimum width */
+  margin-left: -125px; /* Divide value of min-width by 2 */
+  background-color: #333; /* Black background color */
+  color: #fff; /* White text color */
+  text-align: center; /* Centered text */
+  border-radius: 2px; /* Rounded borders */
+  padding: 16px; /* Padding */
+  position: fixed; /* Sit on top of the screen */
+  z-index: 1; /* Add a z-index if needed */
+  left: 50%; /* Center the snackbar */
+  bottom: 30px; /* 30px from the bottom */
+}
+
+#tokens {
+	position: absolute;
+	display: block;
+	top: 40%;
+	left: 40%;
+}
+
+.token_table {
+	position: absolute;
+	background-size: 5vh;
+	height: 5vh;
+	width: 5vh;
+}
+
+.token img {
+	padding-top: 20px;
+	height: 5vh;
+	width: 5vh;
+}
+
+/* Show the snackbar when clicking on a button (class added with JavaScript) */
+#snackbar.show {
+  visibility: visible; /* Show the snackbar */
+  /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+  However, delay the fade out process for 2.5 seconds */
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+body {
+  background-image: url(img/bg/table.jpg);
+}
