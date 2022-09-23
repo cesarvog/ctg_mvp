@@ -1,6 +1,8 @@
 
 //TODO log of the game
 var battleCardSequence = 0;
+var myId = Math.random() * 1000000;
+var batttleIdDict = {};
 var battleIdUsing = -1;
 
 var my_context = "table";
@@ -53,12 +55,15 @@ const t_frost = {"name"  : "frost", "imgPath" : "img/tokens/frost.png"};
 const t_poison = {"name" : "poison", "imgPath": "img/tokens/poison.png"};
 const t_1 = {"name" : "1", "imgPath" : "img/tokens/1.png"};
 
+//remote
+var socket = "";
 
 var me;
+var table = []
+
 class Me {
 	constructor() {
 	this.my_view_card = '';
-	this.my_table = [];
 	this.my_hand_cards = [];
 	this.my_deck_cards = [];
 	}
@@ -93,10 +98,62 @@ class Dice {
 		this.type = t_dice;
 	}
 }
+var handleMessage =function(action, data) {
+	switch (action) {
+	case "persistInTable":
+		exchangeBattleId(data);
+		reverseY(data);
+		table.push(data);
+
+		drawTable();
+		break;
+	case "moveInTable":
+		exchangeBattleId(data);
+		reverseY(data);
+		var rec = table.recover(data.battleId);
+		rec.screendata.x = data.screendata.x;
+		rec.screendata.y = data.screendata.y;
+
+		refreshTable();
+		break;
+	}
+
+
+	updateCtx(C_TABLE);
+	updateIcons();
+	updateScene();
+}
+function reverseY(obj) {
+	if(obj.screendata == undefined) {
+		obj.screendata = {};
+		obj.screendata.x = window.innerWidth/2;
+		obj.screendata.y = window.innerHeight/2;
+	}
+	var y = obj.screendata.y;
+	var ref = window.innerHeight/2;
+	var dif = y-ref;
+
+	obj.screendata.y = (ref-dif- window.innerHeight/4);
+}
 
 function start() {
 	var battleField = new BattleField();
 	me = new Me();
+	other = new Me();
+
+	//remote
+	socket = startManager();
+	if(socket == undefined) {
+		console.log("Ocorreu um erro ao conectar");
+		return;
+	}
+	
+    socket.onmessage = function(event) {
+        console.log("new message " + event.data);
+		var action = event.data.split(",")[0];
+		var data = event.data.substring(action.length+1);
+		handleMessage(action, JSON.parse(data));
+    }
 
 	generateDeckCards(me.my_deck_cards, 60);
 	getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
@@ -122,22 +179,35 @@ function start() {
 
 	iconsList = [icon_play_e, icon_hand_e, icon_dice_e, icon_turn_e, icon_hist_e, icon_table_e, icon_coin_e, icon_deck_e, icon_tokens_e, icon_buy_e];
 
-	me.my_table.recover = function(battleId) {
+	table.recover = function(battleId) {
 		for(var i=0; i < this.length; i++) {
 			if(this[i].battleId == battleId) return this[i]
 		}
 	}
-	window.beforeunload = function (event) {
-		event.preventDefault();
-	}
-	window.unload = function (event) {
-		event.preventDefault();
-	}
+
 	addHist("Começou o jogo");
 
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
+}
+
+
+
+
+var battleIdEx = [];
+function exchangeBattleId(obj) {
+	if(obj.owner == myId) return; //no need to change id of my own cards
+
+	var id = battleIdEx[obj.battleId];
+	if(id == undefined) {
+		battleId = battleCardSequence++,
+		battleIdEx[obj.battleId] = battleId;
+		obj.battleId = battleId;
+		return;
+	}
+
+	obj.battleId = id;
 }
 
 function showDeck() {
@@ -205,7 +275,7 @@ function viewCard(cardData) {
 
 	my_card_view_e.battleId = cardData.battleId;
 
-	var cd = me.my_table.recover(cardData.battleId);
+	var cd = table.recover(cardData.battleId);
 	if(cd != undefined) cardData = cd;
 	var text = "<p class='card_name'> " + cardData.name + " </p>";
 	text += "<div class='card_body'>"
@@ -307,11 +377,12 @@ function getMyCard(battleCardId) {
 	var founded = false;
 	for(const c of me.my_hand_cards) {
 		if(c.battleId == battleCardId) {
-			if(me.my_table.recover(c.battleId) == undefined) {
-				me.my_table.push(c);
+			if(table.recover(c.battleId) == undefined) {
+				table.push(c);
 				c.persisted = true;
 				addHist("Player A jogou a carta " + c.name);
 				founded = true;
+				persistInTable(c, socket);
 			}
 			me.my_hand_cards = removeCard(me.my_hand_cards, battleCardId);
 		}
@@ -319,9 +390,10 @@ function getMyCard(battleCardId) {
 	if (!founded) {
 		for(const c of me.my_deck_cards) {
 			if(c.battleId == battleCardId) {
-				if(me.my_table.recover(c.battleId) == undefined) {
-					me.my_table.push(c);
+				if(table.recover(c.battleId) == undefined) {
+					table.push(c);
 					c.persisted = true;
+					persistInTable(c, socket);
 					addHist("Player A jogou a carta " + c.name);
 				}
 			}
@@ -349,6 +421,7 @@ function generateDeckCards(deck, numCards) {
 				cards[rand].habs,
 				cards[rand].atk,
 				cards[rand].def);
+		newCard.owner = myId;
 		deck.push(newCard);
 	}
 }
@@ -379,7 +452,7 @@ function drawCard(c) {
 		})
 	}
 
-	var cd = me.my_table.recover(c.battleId);
+	var cd = table.recover(c.battleId);
 	var text = "<p class='card_name'> " + cd.name + " </p>";
 	text += "<div class='card_atkdef'>" + cd.atk + "/" + cd.def + "</div>"
 
@@ -416,31 +489,34 @@ function drawToken(elem, obj) {
 }
 
 function drawTable() {
-	for(var i=0; i < me.my_table.length; i++) {
-		if(me.my_table[i].screendata == undefined) {
-			me.my_table[i].screendata = {};
-			me.my_table[i].screendata.x = window.innerHeight/2;
-			me.my_table[i].screendata.y = window.innerWidth/2;
+	for(var i=0; i < table.length; i++) {
+		if(table[i].screendata != undefined) {
+			if(table[i].screendata.new == undefined) {
+				table[i].screendata.new = "no";
+			} else {
+				continue;
+			}
 		} else {
-			continue;
+			table[i].screendata = {};
+			table[i].screendata.x = window.innerHeight/2;
+			table[i].screendata.y = window.innerWidth/2;
 		}
-
 
 	var c = document.createElement("div");
 	c.persisted = true;
-	c.battleId = me.my_table[i].battleId;
+	c.battleId = table[i].battleId;
 
-	if (me.my_table[i].type == t_card) {
+	if (table[i].type == t_card) {
 		drawCard(c);
-	} else if(me.my_table[i].type == t_dice) {
-		drawDice(c, me.my_table[i]);
-	} else if(me.my_table[i].type == t_token) {
-		drawToken(c, me.my_table[i]);
+	} else if(table[i].type == t_dice) {
+		drawDice(c, table[i]);
+	} else if(table[i].type == t_token) {
+		drawToken(c, table[i]);
 	}
 
-	c.style.top = me.my_table[i].screendata.x + "px";
-	c.style.left = me.my_table[i].screendata.y + "px";
-	c.battleId = me.my_table[i].battleId;
+	c.style.top = table[i].screendata.x + "px";
+	c.style.left = table[i].screendata.y + "px";
+	c.battleId = table[i].battleId;
 
 	if(isMobile) {
 		c.addEventListener("touchmove", function(event) {
@@ -489,12 +565,19 @@ function drawTable() {
 						c.addEventListener("touchend", function(){
 							console.log("removing listener of " + c.battleId);
 							document.removeEventListener("touchmove", c.touchmoveFunc);
+							var obj = table.recover(c.battleId);
+							obj.screendata.x = parseInt(c.style.left);
+							obj.screendata.y = parseInt(c.style.top);
+							moveInTable(obj, socket);
 						});
 				} else {
 					c.onmouseup = function() {
 						console.log("release persisted: " + c.battleId)
 						document.removeEventListener('mousemove', c.mousemoveFunc);
-						c.onmouseup = null;
+						var obj = table.recover(c.battleId);
+						obj.screendata.x = parseInt(c.style.left);
+						obj.screendata.y = parseInt(c.style.top);
+						moveInTable(obj, socket);
 					};
 				}
 			}
@@ -513,11 +596,20 @@ function refreshTable() {
 	var dices = document.getElementsByClassName("dice_table");
 	for(var i=0; i < dices.length; i++) {
 		var dice = dices[i];
-		for(var j=0; j<me.my_table.length; j++) {
-			if(me.my_table[j].battleId == dice.battleId && dice.value != me.my_table[j].value) {
-				dice.value = me.my_table[j].value;
+		for(var j=0; j<table.length; j++) {
+			if(table[j].battleId == dice.battleId && dice.value != me.my_table[j].value) {
+				dice.value = table[j].value;
 				dice.getElementsByTagName("text")[0].innerHTML = dice.value;
 			}
+		}
+	}
+
+	for(var i=0; i < my_table_e.childNodes.length; i++) {
+		var elm = my_table_e.childNodes[i];
+		var obj = table.recover(elm.battleId);
+		if(elm.style.left != obj.screendata.x || elm.style.top != obj.screendata.y) {
+			elm.style.left = obj.screendata.x;
+			elm.style.top = obj.screendata.y;
 		}
 	}
 }
@@ -558,7 +650,7 @@ function changeValueNewDice(v) {
 
 function cancelNewDice(elem) {
 	if(elem.parentElement.battleId != undefined) {
-		var dice = me.my_table.recover(elem.parentElement.battleId);
+		var dice = table.recover(elem.parentElement.battleId);
 		dice.value = elem.parentElement.getElementsByTagName("text")[0].innerText;
 		refreshTable();
 	}
@@ -575,11 +667,13 @@ function deleteDice(elem) {
 		for(var i=0; i < elemsTable.length; i++) {
 			if(battleId == elemsTable[i].battleId) {
 				elemsTable[i].remove();
+				removeFromTable(elemsTable[i], socket);
 			}
 		}
-		for(var i=0; i < me.my_table.length; i++) {
-			if(elem.parentElement.battleId == me.my_table[i].battleId) {
-				removeCard(me.my_table, elem.battleId);
+		for(var i=0; i < table.length; i++) {
+			if(elem.parentElement.battleId == table[i].battleId) {
+				removeCard(table, elem.battleId);
+				removeFromTable(table, socket);
 				break;
 			}
 		}
@@ -594,7 +688,7 @@ function deleteDice(elem) {
 
 function createNewDice() {
 	var value = my_dice_e.getElementsByTagName("text")[0].innerText;
-	me.my_table.push(
+	table.push(
 		new Dice(value)
 	);
 
@@ -612,10 +706,12 @@ function turnCard() {
 			if(persisteds[i].classList.contains("card_table_turned")) {
 				persisteds[i].removeAttribute("class");
 				persisteds[i].classList.add("card_table");
+				turnCardInTable(persisteds[i].battleId, socket)
 			} else {
 				persisteds[i].removeAttribute("class");
 				persisteds[i].classList.add("card_table_turned");
 				persisteds[i].classList.add("card_table");
+				turnCardInTable(persisteds[i].battleId, socket)
 			}
 			break;
 		}
@@ -684,7 +780,7 @@ function addToken(id) {
 	
 	newObj.type = t_token;
 	newObj.battleId = battleCardSequence++,
-	me.my_table.push(newObj);
+	table.push(newObj);
 	drawTable();
 	updateCtx(C_TABLE);
 	updateIcons();
