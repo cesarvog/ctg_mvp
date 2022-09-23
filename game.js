@@ -2,6 +2,8 @@
 //TODO log of the game
 var battleCardSequence = 0;
 var myId = Math.random() * 1000000;
+var player = "";
+
 var batttleIdDict = {};
 var battleIdUsing = -1;
 
@@ -100,15 +102,22 @@ class Dice {
 }
 var handleMessage =function(action, data) {
 	switch (action) {
+	case "welcome":
+		if(data.m == 2) {
+			this.battleCardSequence += 10000;
+			player = "A";
+		} else {
+			player = "B";
+		} 
+		startBattle();
+		break;
 	case "persistInTable":
-		exchangeBattleId(data);
 		reverseY(data);
 		table.push(data);
 
 		drawTable();
 		break;
 	case "moveInTable":
-		exchangeBattleId(data);
 		reverseY(data);
 		var rec = table.recover(data.battleId);
 		rec.screendata.x = data.screendata.x;
@@ -116,12 +125,27 @@ var handleMessage =function(action, data) {
 
 		refreshTable();
 		break;
+	case "turnCard":
+		turnCardRemote(data.e);
+		refreshTable();
+		break;
+	case "addToken":
+		addTokenRemote(data);
+		break;
+	case "throwCoin":
+		throwCoinRemote(data.e);
+		break;
+	case "hist":
+		addHist
+		playSnackbar(data.e);
+		break;
 	}
 
-
+/*
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
+	*/
 }
 function reverseY(obj) {
 	if(obj.screendata == undefined) {
@@ -130,10 +154,26 @@ function reverseY(obj) {
 		obj.screendata.y = window.innerHeight/2;
 	}
 	var y = obj.screendata.y;
-	var ref = window.innerHeight/2;
-	var dif = y-ref;
+	var height = window.innerHeight;
+	var dif = height-y;
+	var objHeight = 0;
 
-	obj.screendata.y = (ref-dif- window.innerHeight/4);
+	switch(obj.type) {
+		case t_card:
+			objHeight = height / 5;	
+			break;
+		case t_dice:
+			objHeight = height / 10;
+			break;
+		case t_token:
+			objHeight = height / 20;
+			break;
+		case t_dice:
+			objHeight = height / 10;
+			break;
+	}
+
+	obj.screendata.y = dif - objHeight;
 }
 
 function start() {
@@ -154,7 +194,9 @@ function start() {
 		var data = event.data.substring(action.length+1);
 		handleMessage(action, JSON.parse(data));
     }
+}
 
+function startBattle() {
 	generateDeckCards(me.my_deck_cards, 60);
 	getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
 	
@@ -185,29 +227,11 @@ function start() {
 		}
 	}
 
-	addHist("Começou o jogo");
+	addHist("Começou o jogo, você é o Jogador " + player + ", boa sorte!", true);
 
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
-}
-
-
-
-
-var battleIdEx = [];
-function exchangeBattleId(obj) {
-	if(obj.owner == myId) return; //no need to change id of my own cards
-
-	var id = battleIdEx[obj.battleId];
-	if(id == undefined) {
-		battleId = battleCardSequence++,
-		battleIdEx[obj.battleId] = battleId;
-		obj.battleId = battleId;
-		return;
-	}
-
-	obj.battleId = id;
 }
 
 function showDeck() {
@@ -379,8 +403,8 @@ function getMyCard(battleCardId) {
 		if(c.battleId == battleCardId) {
 			if(table.recover(c.battleId) == undefined) {
 				table.push(c);
+				addHist("Player " + player + " jogou a carta " + c.name);
 				c.persisted = true;
-				addHist("Player A jogou a carta " + c.name);
 				founded = true;
 				persistInTable(c, socket);
 			}
@@ -392,9 +416,9 @@ function getMyCard(battleCardId) {
 			if(c.battleId == battleCardId) {
 				if(table.recover(c.battleId) == undefined) {
 					table.push(c);
+					addHist("Player " + player + " jogou a carta " + c.name);
 					c.persisted = true;
 					persistInTable(c, socket);
-					addHist("Player A jogou a carta " + c.name);
 				}
 			}
 			me.my_deck_cards = removeCard(me.my_deck_cards, battleCardId);
@@ -490,13 +514,20 @@ function drawToken(elem, obj) {
 
 function drawTable() {
 	for(var i=0; i < table.length; i++) {
-		if(table[i].screendata != undefined) {
-			if(table[i].screendata.new == undefined) {
-				table[i].screendata.new = "no";
-			} else {
-				continue;
+		var divElements = my_table_e.childNodes;
+		var contains = false;
+		for(var j=0; j < divElements.length; j++) {
+			if(divElements[j].battleId == table[i].battleId) {
+				contains = true;
+				break;
 			}
-		} else {
+		}
+
+		if(contains) {
+			continue;
+		}
+
+		if(table[i].screendata == undefined) {
 			table[i].screendata = {};
 			table[i].screendata.x = window.innerHeight/2;
 			table[i].screendata.y = window.innerWidth/2;
@@ -597,7 +628,7 @@ function refreshTable() {
 	for(var i=0; i < dices.length; i++) {
 		var dice = dices[i];
 		for(var j=0; j<table.length; j++) {
-			if(table[j].battleId == dice.battleId && dice.value != me.my_table[j].value) {
+			if(table[j].battleId == dice.battleId && dice.value != table[j].value) {
 				dice.value = table[j].value;
 				dice.getElementsByTagName("text")[0].innerHTML = dice.value;
 			}
@@ -688,14 +719,32 @@ function deleteDice(elem) {
 
 function createNewDice() {
 	var value = my_dice_e.getElementsByTagName("text")[0].innerText;
-	table.push(
-		new Dice(value)
-	);
+	var dice = new Dice(value);
+	table.push(dice);
 
 	drawTable();
+	persistInTable(dice, socket)
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
+}
+
+//remote
+function turnCardRemote(battleId) {
+	var persisteds = my_table_e.childNodes;
+	for(var i=0; i < persisteds.length; i++) {
+		if(battleId == persisteds[i].battleId) {
+			if(persisteds[i].classList.contains("card_table_turned")) {
+				persisteds[i].removeAttribute("class");
+				persisteds[i].classList.add("card_table");
+			} else {
+				persisteds[i].removeAttribute("class");
+				persisteds[i].classList.add("card_table_turned");
+				persisteds[i].classList.add("card_table");
+			}
+			break;
+		}
+	}
 }
 
 function turnCard() {
@@ -706,26 +755,43 @@ function turnCard() {
 			if(persisteds[i].classList.contains("card_table_turned")) {
 				persisteds[i].removeAttribute("class");
 				persisteds[i].classList.add("card_table");
-				turnCardInTable(persisteds[i].battleId, socket)
+				turnCardInTable(envelopeInfo(persisteds[i].battleId), socket)
 			} else {
 				persisteds[i].removeAttribute("class");
 				persisteds[i].classList.add("card_table_turned");
 				persisteds[i].classList.add("card_table");
-				turnCardInTable(persisteds[i].battleId, socket)
+				turnCardInTable(envelopeInfo(persisteds[i].battleId), socket)
 			}
 			break;
 		}
 	}
+	addHist("Player " + player + " virou a carta " + table.recover(id).name);
+
+
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
 }
+function envelopeInfo(info) {
+	var e = {};
+	e.e = info;
+	return e;
+}
 
-function addHist(v) {
+function addHistRemote(v) {
 	var list = my_hist_e.childNodes[0];
 	var li = document.createElement("li");
 	li.innerText = v;
 	list.appendChild(li);
+}
+
+function addHist(v, localOnly) {
+	var list = my_hist_e.childNodes[0];
+	var li = document.createElement("li");
+	li.innerText = v;
+	list.appendChild(li);
+
+	if(localOnly == undefined || !localOnly) sendHistRemote(envelopeInfo(v), socket);
 }
 
 function playSnackbar(text) {
@@ -745,16 +811,27 @@ function showTable() {
 	updateScene();
 }
 
+function throwCoinRemote(t) {
+	playSnackbar(t);
+}
+
 function throwCoin() {
 	var random_boolean = Math.random() < 0.5;
 	var text = "";
 	if(random_boolean) {
-		text = "Player A tirou um sucesso na moeda";
+		text = "Player " + player + " tirou um sucesso na moeda";
 	} else {
-		text = "Player A tirou uma falha na moeda";
+		text = "Player " + player + " tirou uma falha na moeda";
 	}
 	addHist(text);
 	playSnackbar(text);
+	throwCoinInTable(envelopeInfo(text), socket);
+}
+
+function addTokenRemote(data) {
+	table.push(data);
+
+	drawTable();
 }
 
 function addToken(id) {
@@ -781,6 +858,8 @@ function addToken(id) {
 	newObj.type = t_token;
 	newObj.battleId = battleCardSequence++,
 	table.push(newObj);
+	addTokenInTable(newObj, socket);
+
 	drawTable();
 	updateCtx(C_TABLE);
 	updateIcons();

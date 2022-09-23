@@ -34,6 +34,10 @@ function persistInTable(data, s) {
    s.send(prepare("persistInTable", data));
 }
 
+function addTokenInTable(data, s) {
+    s.send(prepare("addToken", data))
+}
+
 function moveInTable(data, s) {
     s.send(prepare("moveInTable", data));
 }
@@ -44,6 +48,14 @@ function removeFromTable(data, s) {
 
 function turnCardInTable(data, s) {
     s.send(prepare("turnCard", data));
+}
+
+function throwCoinInTable(data, s) {
+    s.send(prepare("throwCoin", data));
+}
+
+function sendHistRemote(data, s) {
+    s.send(prepare("hist", data));
 }
 
 function prepare(action, data) {
