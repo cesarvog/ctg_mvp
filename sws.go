@@ -6,11 +6,13 @@ import (
 	"gopkg.in/olahol/melody.v1"
 	"strings"
 	"fmt"
+	"os"
 )
 
 func main() {
 	r := gin.Default()
 	m := melody.New()
+	port := os.Getenv("PORT")
 
 	rooms := make(map[string][]*melody.Session)
 
@@ -55,5 +57,5 @@ func main() {
 		}
 	})
 
-	r.Run(":5000")
+	r.Run(":"+port)
 }
