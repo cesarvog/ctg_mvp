@@ -14,6 +14,8 @@ func main() {
 	m := melody.New()
 	port := os.Getenv("PORT")
 
+	fmt.Println("Starting in port " + port)
+
 	rooms := make(map[string][]*melody.Session)
 
 	r.Use(static.Serve("/", static.LocalFile("./public", true)))
