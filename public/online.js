@@ -3,7 +3,7 @@ var room = "";
 
 
 function startManager() {
-    var port= "5000"
+    var port= "80"
     room = "roomx"
 
     let paramString = window.location.href.split('?')[1];
