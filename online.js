@@ -58,6 +58,10 @@ function sendHistRemote(data, s) {
     s.send(prepare("hist", data));
 }
 
+function updateDiceRemote(data, s) {
+    s.send(prepare("updateDice", data));
+}
+
 function prepare(action, data) {
     return room + "," + action + "," + JSON.stringify(data)
 }

@@ -24,6 +24,8 @@
 }
 .card_name {
 	text-align: center;
+	font-weight: bold;
+	font-size: 200%;
 }
 
 .card_body {
@@ -84,9 +86,9 @@
 .dice_table {
 	position: absolute;
 	background-image: url("img/newdice.png");
-	background-size: 10vw;
-	width: 10vw;
-	height: 10vw;
+	background-size: cover;
+	width: 5vh;
+	height: 5vh;
 }
 .dice_table text {
     left: 40%;
@@ -190,6 +192,19 @@ p, div {
   animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
 
+/* Cards background */
+.card_type_char {
+	background-color: lightgray;
+}
+
+.card_type_item {
+	background-color: #a9926d;
+}
+
+.card_type_equip {
+	background-color: #6a949d;
+}
+
 /* Animations to fade the snackbar in and out */
 @-webkit-keyframes fadein {
   from {bottom: 0; opacity: 0;}
@@ -216,3 +231,7 @@ body {
   background-image: url(img/bg/table.jpg);
 }
 */
+
+#hist {
+	font-size: 200%;
+}

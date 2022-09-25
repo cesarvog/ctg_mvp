@@ -81,7 +81,7 @@ class BattleField {
 }
 
 class Card {
-	constructor(id, image, name, body, atk, def) {
+	constructor(id, image, name, body, atk, def, cardType, clazz) {
 		this.battleId = battleCardSequence++,
 		this.id = id;
 		this.image = image;
@@ -90,6 +90,8 @@ class Card {
 		this.atk  = atk;
 		this.def  = def;
 		this.type = t_card;
+		this.cardType = cardType;
+		this.clazz = clazz;
 	};
 }
 
@@ -136,8 +138,11 @@ var handleMessage =function(action, data) {
 		throwCoinRemote(data.e);
 		break;
 	case "hist":
-		addHist
+		addHistRemote(data.e);
 		playSnackbar(data.e);
+		break;
+	case "updateDice":
+		changeValueDiceRemote(data);
 		break;
 	}
 
@@ -173,7 +178,7 @@ function reverseY(obj) {
 			break;
 	}
 
-	obj.screendata.y = dif - objHeight;
+	obj.screendata.y = dif + objHeight;
 }
 
 function start() {
@@ -286,9 +291,26 @@ function drawCardInHands(cardData) {
 	c.onclick = f;
 	c.addEventListener("touchstart", f);
 	var text = "<p class='card_name'> " + cardData.name + " </p>";
-	text += "<div class='card_atkdef'>" + cardData.atk + "/" + cardData.def + "</div>"
+	if(cardData.cardType == "P") {
+		text += "<div class='card_atkdef'>" + cardData.atk + "/" + cardData.def + "</div>"
+	}
+	paintCard(cardData, c);
 	c.innerHTML = text;
 	return c;
+}
+
+function paintCard(card, elem) {
+	switch(card.cardType) {
+		case "P":
+			elem.classList.add("card_type_char");
+			break;
+		case "I":
+			elem.classList.add("card_type_item");
+			break;
+		case "E":
+			elem.classList.add("card_type_equip");
+			break;
+	}
 }
 
 function viewCard(cardData) {
@@ -302,12 +324,19 @@ function viewCard(cardData) {
 	var cd = table.recover(cardData.battleId);
 	if(cd != undefined) cardData = cd;
 	var text = "<p class='card_name'> " + cardData.name + " </p>";
-	text += "<div class='card_body'>"
+	text += "<div class='card_body'>";
+	if(cardData.cardType == "P") {
+		text += "<p class='card_hab'>" + cardData.clazz + "</p>"
+	}
 	for(var i=0; i < cardData.body.length; i++) {
 		text += "<p class='card_hab'>" + cardData.body[i] + "</p>"
 	}
 	text += "</div>"
-	text += "<div class='card_atkdef'>" + cardData.atk + "/" + cardData.def + "</div>"
+
+	if(cardData.cardType == "P") {
+		text += "<div class='card_atkdef'>" + cardData.atk + "/" + cardData.def + "</div>"
+	}
+	paintCard(cardData, my_card_view_e);
 	my_card_view_e.innerHTML = text;	
 
 	if(cardData.persisted) {
@@ -436,7 +465,13 @@ function generateDeckCards(deck, numCards) {
 	var qttCards = cards.length;
 
 	for(var i=0; i < numCards; i++) {
-		var rand = Math.floor(Math.random() * qttCards);
+
+		var rand = 0;
+		if(i < 5) {
+			rand = Math.floor(Math.random() * 16);
+		} else {
+			rand = Math.floor(Math.random() * qttCards);
+		}
 
 		var newCard = new Card(
 				0,
@@ -444,14 +479,35 @@ function generateDeckCards(deck, numCards) {
 				cards[rand].name,
 				cards[rand].habs,
 				cards[rand].atk,
-				cards[rand].def);
+				cards[rand].def,
+				cards[rand].type,
+				cards[rand].class);
 		newCard.owner = myId;
 		deck.push(newCard);
 	}
 }
 
 function getCardFromDeck(deck, hand, num) {
-	for(var i=0; i < num; i++) hand.push(deck.pop());
+	//get chars
+	var qtd = 0;
+	for(var i=0; i < deck.length && qtd < 5; i++) { 
+		if(deck[i].cardType == "P") {
+			hand.push(deck[i]);
+			deck[i] = "x";
+			qtd++;
+		}
+	}
+	var newDeck =[];
+	for(var i=0; i < deck.length; i++) { 
+		if(deck[i] != "x") newDeck.push(deck[i]);
+	}
+
+	deck = newDeck;
+	me.my_deck_cards = deck;
+
+	for(var i=0; i < 2; i++) { 
+		hand.push(deck.pop());
+	}
 }
 
 function drawCard(c) {
@@ -478,8 +534,11 @@ function drawCard(c) {
 
 	var cd = table.recover(c.battleId);
 	var text = "<p class='card_name'> " + cd.name + " </p>";
-	text += "<div class='card_atkdef'>" + cd.atk + "/" + cd.def + "</div>"
+	if(cd.cardType == "P") {
+		text += "<div class='card_atkdef'>" + cd.atk + "/" + cd.def + "</div>"
+	}
 
+	paintCard(cd, c);
 	c.innerHTML = text;	
 }
 
@@ -563,6 +622,14 @@ function drawTable() {
 		
 				moveAt(event.touches[0].clientX, event.touches[0].clientY);
 		});
+		c.addEventListener("touchend", function(event) {
+			console.log("parou (touchend)");
+			var obj = table.recover(c.battleId);
+			obj.screendata.x = parseInt(c.style.left);
+			obj.screendata.y = parseInt(c.style.top);
+
+			moveInTable(obj, socket);
+		});
 	} else {
 		 c.onmousedown = function(event) {
 				console.log("moving persisted: " + c.battleId);
@@ -592,25 +659,14 @@ function drawTable() {
 					document.addEventListener('mousemove', c.mousemoveFunc);
 					c.onmousemove = c.mouseMoveFunc;
 				}
-				if(isMobile) {
-						c.addEventListener("touchend", function(){
-							console.log("removing listener of " + c.battleId);
-							document.removeEventListener("touchmove", c.touchmoveFunc);
-							var obj = table.recover(c.battleId);
-							obj.screendata.x = parseInt(c.style.left);
-							obj.screendata.y = parseInt(c.style.top);
-							moveInTable(obj, socket);
-						});
-				} else {
-					c.onmouseup = function() {
-						console.log("release persisted: " + c.battleId)
-						document.removeEventListener('mousemove', c.mousemoveFunc);
-						var obj = table.recover(c.battleId);
-						obj.screendata.x = parseInt(c.style.left);
-						obj.screendata.y = parseInt(c.style.top);
-						moveInTable(obj, socket);
-					};
-				}
+				c.onmouseup = function() {
+					console.log("release persisted: " + c.battleId)
+					document.removeEventListener('mousemove', c.mousemoveFunc);
+					var obj = table.recover(c.battleId);
+					obj.screendata.x = parseInt(c.style.left);
+					obj.screendata.y = parseInt(c.style.top);
+					moveInTable(obj, socket);
+				};
 			}
 	};
 	//c.addEventListener("mousedown", c.onmousedown);
@@ -671,6 +727,11 @@ function showNewDice(dice) {
 	updateScene();
 }
 
+function changeValueDiceRemote(data) {
+	table.recover(data.battleId).value = data.value;
+	refreshTable();
+}
+
 function changeValueNewDice(v) {
 	var t = my_dice_e.getElementsByTagName("text")[0];
 	var actual = parseInt(t.innerText);
@@ -682,7 +743,14 @@ function changeValueNewDice(v) {
 function cancelNewDice(elem) {
 	if(elem.parentElement.battleId != undefined) {
 		var dice = table.recover(elem.parentElement.battleId);
-		dice.value = elem.parentElement.getElementsByTagName("text")[0].innerText;
+		var old = dice.value;
+		var newv = elem.parentElement.getElementsByTagName("text")[0].innerText;
+		dice.value = newv;
+
+
+		addHist("Player " + player + " mudou o valor de um dado de " + old + " para " + newv);
+		updateDiceRemote(dice, socket);
+
 		refreshTable();
 	}
 
@@ -742,6 +810,7 @@ function turnCardRemote(battleId) {
 				persisteds[i].classList.add("card_table_turned");
 				persisteds[i].classList.add("card_table");
 			}
+			paintCard(table.recover(battleId), persisteds[i])
 			break;
 		}
 	}
@@ -762,6 +831,7 @@ function turnCard() {
 				persisteds[i].classList.add("card_table");
 				turnCardInTable(envelopeInfo(persisteds[i].battleId), socket)
 			}
+			paintCard(table.recover(id), persisteds[i])
 			break;
 		}
 	}
