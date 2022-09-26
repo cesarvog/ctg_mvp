@@ -14,6 +14,7 @@ function startManager() {
     }
 
     let socket = new WebSocket("wss://" + window.location.hostname + "/ws");
+    //let socket = new WebSocket("ws://" + window.location.hostname + ":5000/ws");
 
     socket.onerror = function(err) {
         console.log(err);
@@ -31,7 +32,14 @@ function startManager() {
 }
 
 function persistInTable(data, s) {
-   s.send(prepare("persistInTable", data));
+    if(data.cid != undefined) {
+        var newData = {};
+        newData.cid = data.cid;
+        newData.battleId = data.battleId;
+        newData.screendata = data.screendata;
+        data = newData;
+    }
+    s.send(prepare("persistInTable", data));
 }
 
 function addTokenInTable(data, s) {
@@ -39,6 +47,14 @@ function addTokenInTable(data, s) {
 }
 
 function moveInTable(data, s) {
+    if(data.cid != undefined) {
+        var newData = {};
+        newData.cid = data.cid;
+        newData.battleId = data.battleId;
+        newData.screendata = data.screendata;
+        data = newData;
+    }
+
     s.send(prepare("moveInTable", data));
 }
 

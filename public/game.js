@@ -81,9 +81,9 @@ class BattleField {
 }
 
 class Card {
-	constructor(id, image, name, body, atk, def, cardType, clazz) {
+	constructor(cid, image, name, body, atk, def, cardType, clazz) {
 		this.battleId = battleCardSequence++,
-		this.id = id;
+		this.cid = cid;
 		this.image = image;
 		this.name = name;
 		this.body = body;
@@ -102,6 +102,15 @@ class Dice {
 		this.type = t_dice;
 	}
 }
+
+function getCard(cid) {
+	var c = cards.filter(obj => {
+		return obj.cid == cid;
+	})
+
+	if(c.length > 0) return c[0];
+}
+
 var handleMessage =function(action, data) {
 	switch (action) {
 	case "welcome":
@@ -114,10 +123,26 @@ var handleMessage =function(action, data) {
 		startBattle();
 		break;
 	case "persistInTable":
+		if(data.cid != undefined) {
+			var card = getCard(data.cid);
+			var newCard = new Card(
+				card.cid,
+			   '',
+				card.name,
+				card.habs,
+				card.atk,
+				card.def,
+				card.type,
+				card.class);
+			newCard.screendata = data.screendata;
+			newCard.battleId = data.battleId;
+			data = newCard;
+		}
 		reverseY(data);
 		table.push(data);
 
 		drawTable();
+		refreshTable();
 		break;
 	case "moveInTable":
 		reverseY(data);
@@ -143,6 +168,14 @@ var handleMessage =function(action, data) {
 		break;
 	case "updateDice":
 		changeValueDiceRemote(data);
+		break;
+	case "removeFromTable":
+		for(var i=0; i < my_table_e.childNodes.length; i++)	{
+			if(my_table_e.childNodes[i].battleId == data.battleId) {
+				my_table_e.childNodes[i].remove();
+			}
+		}
+		deleteFromTable(data.battleId);
 		break;
 	}
 
@@ -230,6 +263,14 @@ function startBattle() {
 		for(var i=0; i < this.length; i++) {
 			if(this[i].battleId == battleId) return this[i]
 		}
+	}
+
+	var h = window.innerHeight/2;
+	var w = window.innerWidth/2;
+	if(w > h) {
+		my_card_view_e.style.height = "80vh";
+		my_card_view_e.style.width = "calc(80vh * 0.6)";
+
 	}
 
 	addHist("Começou o jogo, você é o Jogador " + player + ", boa sorte!", true);
@@ -431,6 +472,7 @@ function getMyCard(battleCardId) {
 	for(const c of me.my_hand_cards) {
 		if(c.battleId == battleCardId) {
 			if(table.recover(c.battleId) == undefined) {
+				posTable(c);
 				table.push(c);
 				addHist("Player " + player + " jogou a carta " + c.name);
 				c.persisted = true;
@@ -444,6 +486,7 @@ function getMyCard(battleCardId) {
 		for(const c of me.my_deck_cards) {
 			if(c.battleId == battleCardId) {
 				if(table.recover(c.battleId) == undefined) {
+					posTable(c);
 					table.push(c);
 					addHist("Player " + player + " jogou a carta " + c.name);
 					c.persisted = true;
@@ -474,7 +517,7 @@ function generateDeckCards(deck, numCards) {
 		}
 
 		var newCard = new Card(
-				0,
+				cards[rand].cid,
 			   '',
 				cards[rand].name,
 				cards[rand].habs,
@@ -569,8 +612,17 @@ function drawDice(view, dice) {
 function drawToken(elem, obj) {
 	elem.classList.add("token_table");
 	elem.style.backgroundImage = "url(" + obj.imgPath +  ")";
+	posTable(elem);
+	posTable(obj);
 }
 
+function posTable(elem) {
+	if(elem.screendata == undefined) {
+		elem.screendata = {};
+		elem.screendata.x = window.innerHeight/2;
+		elem.screendata.y = window.innerWidth/2;
+	}
+}
 function drawTable() {
 	for(var i=0; i < table.length; i++) {
 		var divElements = my_table_e.childNodes;
@@ -584,12 +636,6 @@ function drawTable() {
 
 		if(contains) {
 			continue;
-		}
-
-		if(table[i].screendata == undefined) {
-			table[i].screendata = {};
-			table[i].screendata.x = window.innerHeight/2;
-			table[i].screendata.y = window.innerWidth/2;
 		}
 
 	var c = document.createElement("div");
@@ -624,7 +670,7 @@ function drawTable() {
 		});
 		c.addEventListener("touchend", function(event) {
 			console.log("parou (touchend)");
-			var obj = table.recover(c.battleId);
+			table.recover(c.battleId);
 			obj.screendata.x = parseInt(c.style.left);
 			obj.screendata.y = parseInt(c.style.top);
 
@@ -765,14 +811,15 @@ function deleteDice(elem) {
 		var elemsTable = my_table_e.childNodes;
 		for(var i=0; i < elemsTable.length; i++) {
 			if(battleId == elemsTable[i].battleId) {
-				elemsTable[i].remove();
 				removeFromTable(elemsTable[i], socket);
+				deleteFromTable(elemsTable[i].battleId);
+				elemsTable[i].remove();
 			}
 		}
 		for(var i=0; i < table.length; i++) {
 			if(elem.parentElement.battleId == table[i].battleId) {
-				removeCard(table, elem.battleId);
 				removeFromTable(table, socket);
+				deleteFromTable(elem.battleId);
 				break;
 			}
 		}
@@ -785,9 +832,20 @@ function deleteDice(elem) {
 	updateScene();
 }
 
+function deleteFromTable(battleId) {
+	var f = table.recover;
+	var newTable = table.filter(obj => {
+		return obj.battleId != battleId;
+	});
+	newTable.recover = f;
+	table = newTable;
+}
+
 function createNewDice() {
 	var value = my_dice_e.getElementsByTagName("text")[0].innerText;
 	var dice = new Dice(value);
+
+	posTable(dice);
 	table.push(dice);
 
 	drawTable();
@@ -928,9 +986,9 @@ function addToken(id) {
 	newObj.type = t_token;
 	newObj.battleId = battleCardSequence++,
 	table.push(newObj);
-	addTokenInTable(newObj, socket);
 
 	drawTable();
+	addTokenInTable(newObj, socket);
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
