@@ -180,6 +180,8 @@ var handleMessage =function(action, data) {
 			rec.screendata.x = data.screendata.x;
 			rec.screendata.y = data.screendata.y;
 		}
+		rec.screendata = data.screendata;
+		rec.slot = data.slot;
 
 		refreshTable();
 		break;
