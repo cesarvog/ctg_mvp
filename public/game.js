@@ -20,6 +20,7 @@ const C_HIST = "hist";
 var my_hand_cards_e = "";
 var my_card_view_e = "";
 var my_table_e = "";
+var my_canvas_e = "";
 var my_dice_e = "";
 var my_coin_e = "";
 var my_hist_e = "";
@@ -40,7 +41,8 @@ var icon_buy_e = "";
 var iconsList = [];
 
 //table
-var topZIndex = 1;
+var topZIndex = 11;
+var topZIndexCounters = 10000;
 
 //types
 t_card = "card";
@@ -92,6 +94,11 @@ class Card {
 		this.type = t_card;
 		this.cardType = cardType;
 		this.clazz = clazz;
+		if(player == "A") {
+			this.slot = {x: 2,y: 1};
+		} else {
+			this.slot = {x: 0,y: 1};
+		}
 	};
 }
 
@@ -116,9 +123,9 @@ var handleMessage =function(action, data) {
 	case "welcome":
 		if(data.m == 2) {
 			this.battleCardSequence += 10000;
-			player = "A";
-		} else {
 			player = "B";
+		} else {
+			player = "A";
 		} 
 		startBattle();
 		break;
@@ -138,17 +145,35 @@ var handleMessage =function(action, data) {
 			newCard.battleId = data.battleId;
 			data = newCard;
 		}
-		reverseY(data);
+
+		if(data.slot != undefined) {
+			reverseSlots(data.slot);
+			var p = getSlotPixelFromNumber(data.slot.x, data.slot.y);
+			data.screendata.x = p.x;
+			data.screendata.y = p.y;
+		} else {
+			reverseY(data);
+			data.screendata.x = data.screendata.x;
+			data.screendata.y = data.screendata.y;
+		}
+
 		table.push(data);
 
 		drawTable();
 		refreshTable();
 		break;
 	case "moveInTable":
-		reverseY(data);
 		var rec = table.recover(data.battleId);
-		rec.screendata.x = data.screendata.x;
-		rec.screendata.y = data.screendata.y;
+		if(data.slot != undefined) {
+			reverseSlots(data.slot);
+			var p = getSlotPixelFromNumber(data.slot.x, data.slot.y);
+			rec.screendata.x = p.x;
+			rec.screendata.y = p.y;
+		} else {
+			reverseY(data);
+			rec.screendata.x = data.screendata.x;
+			rec.screendata.y = data.screendata.y;
+		}
 
 		refreshTable();
 		break;
@@ -177,7 +202,12 @@ var handleMessage =function(action, data) {
 		}
 		deleteFromTable(data.battleId);
 		break;
-	}
+}
+
+function reverseSlots(slot) {
+	if(slot.y == 0) slot.y = 2;
+	else if(slot.y == 2) slot.y = 0;
+}
 
 /*
 	updateCtx(C_TABLE);
@@ -219,6 +249,7 @@ function start() {
 	me = new Me();
 	other = new Me();
 
+	drawGrid();
 	//remote
 	socket = startManager();
 	if(socket == undefined) {
@@ -239,13 +270,14 @@ function startBattle() {
 	getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
 	
 	my_table_e = document.getElementById("table");
+	my_canvas_e = document.getElementById("canvas");
 	my_hand_cards_e = document.getElementById("hand");
 	my_card_view_e = document.getElementById("card_view");
 	my_dice_e = document.getElementById("newdice");
 	my_hist_e = document.getElementById("hist");
 	my_tokens_e = document.getElementById("tokens");
 	my_snack_bar_e = document.getElementById("snackbar");
-	sceneList = [my_table_e, my_hand_cards_e, my_card_view_e, my_dice_e, my_hist_e, my_tokens_e];
+	sceneList = [my_table_e, my_canvas_e, my_hand_cards_e, my_card_view_e, my_dice_e, my_hist_e, my_tokens_e];
 	icon_dice_e = document.getElementById("dice_icon");
 	icon_play_e = document.getElementById("play_icon");
 	icon_hand_e = document.getElementById("hand_icon");
@@ -426,7 +458,7 @@ function displayScene() {
 
 function updateScene() {
 	if(my_context === C_TABLE) {
-		displayScene(my_table_e);
+		displayScene(my_table_e, my_canvas_e);
 	}else if(my_context === C_HAND_CARDS) {
 		displayScene(my_hand_cards_e);
 	}else if(my_context === C_CARD_VIEW) {
@@ -471,7 +503,8 @@ function getMyCard(battleCardId) {
 	var founded = false;
 	for(const c of me.my_hand_cards) {
 		if(c.battleId == battleCardId) {
-			if(table.recover(c.battleId) == undefined) {
+			obj = table.recover(c.battleId);
+			if(obj == undefined) {
 				posTable(c);
 				table.push(c);
 				addHist("Player " + player + " jogou a carta " + c.name);
@@ -619,8 +652,14 @@ function drawToken(elem, obj) {
 function posTable(elem) {
 	if(elem.screendata == undefined) {
 		elem.screendata = {};
-		elem.screendata.x = window.innerHeight/2;
-		elem.screendata.y = window.innerWidth/2;
+		if(elem.slot != undefined) {
+			var s = getSlotPixelFromNumber(elem.slot.x, elem.slot.y);
+			elem.screendata.x = s.x;
+			elem.screendata.y = s.y;
+		} else {
+			elem.screendata.x = window.innerHeight/2;
+			elem.screendata.y = window.innerWidth/2;
+		}
 	}
 }
 function drawTable() {
@@ -650,12 +689,12 @@ function drawTable() {
 		drawToken(c, table[i]);
 	}
 
-	c.style.top = table[i].screendata.x + "px";
-	c.style.left = table[i].screendata.y + "px";
+	c.style.top = table[i].screendata.y + "px";
+	c.style.left = table[i].screendata.x + "px";
 	c.battleId = table[i].battleId;
 
 	if(isMobile) {
-		c.addEventListener("touchmove", function(event) {
+		c.childNodes[0].addEventListener("touchmove", function(event) {
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
 				topZIndex++;
@@ -670,14 +709,20 @@ function drawTable() {
 		});
 		c.addEventListener("touchend", function(event) {
 			console.log("parou (touchend)");
-			table.recover(c.battleId);
-			obj.screendata.x = parseInt(c.style.left);
-			obj.screendata.y = parseInt(c.style.top);
+			var obj = table.recover(c.battleId);
 
+			var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
+			obj.slot = s;
+			var p = getSlotPixelFromNumber(s.x, s.y);
+			obj.screendata.x = p.x;
+			obj.screendata.y = p.y;
+			
+			refreshTable();
 			moveInTable(obj, socket);
 		});
 	} else {
-		 c.onmousedown = function(event) {
+		 c.childNodes[0].onmousedown = function(event) {
+				c.moving = true;
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
 				topZIndex++;
@@ -689,7 +734,7 @@ function drawTable() {
 				}
 
 				//moveAt(event.pageX, event.pageY);
- 
+
 				if(isMobile) {
 					c.touchmoveFunc = function(event) {
 						moveAt(event.touches[0].clientX, event.touches[0].clientY);
@@ -708,12 +753,23 @@ function drawTable() {
 				c.onmouseup = function() {
 					console.log("release persisted: " + c.battleId)
 					document.removeEventListener('mousemove', c.mousemoveFunc);
+
+					if(!this.moving) {
+						this.moving = false;
+						return;
+					}
 					var obj = table.recover(c.battleId);
-					obj.screendata.x = parseInt(c.style.left);
-					obj.screendata.y = parseInt(c.style.top);
+					var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
+					obj.slot = s;
+					var p = getSlotPixelFromNumber(s.x, s.y);
+					obj.screendata.x = p.x;
+					obj.screendata.y = p.y;
+
+					refreshTable();
 					moveInTable(obj, socket);
+					this.moving = false;
 				};
-			}
+		}
 	};
 	//c.addEventListener("mousedown", c.onmousedown);
 	
@@ -737,14 +793,60 @@ function refreshTable() {
 		}
 	}
 
+	// margin top for equipped cards
+	var slotObjs = new Array(3);
+	for(var i=0; i < 3; i++) {
+		slotObjs[i] = new Array(3);
+		for(var j=0; j<3; j++) {
+			slotObjs[i][j] = [];
+		}
+	}
+
+	for(var i=0; i < table.length; i++) {
+		if(table[i].slot == undefined) continue;
+		if(slotObjs[table[i].slot.x][table[i].slot.y] == undefined) slotObjs[table[i].slot.x][table[i].slot.y] = [];
+		slotObjs[table[i].slot.x][table[i].slot.y].push(table[i]);
+	}
+
+	var slotSize = getSlotSize();
+
+	for(var i=0; i < slotObjs.length; i++) {
+		for(var j=0; j < slotObjs[i].length; j++) {
+			var objs = slotObjs[i][j];
+			if(objs == undefined) continue;
+			objs.sort((a, b) => (a.cardType > b.cardType) ? 1 : -1);
+
+			for(var k=0; k < objs.length; k++) {
+				var obj = objs[k];
+
+				if(obj.cardType != undefined) {
+					var p = getSlotPixelFromNumber(obj.slot.x, obj.slot.y);
+					obj.screendata.x = p.x;
+					obj.screendata.y = p.y;
+
+					if(obj.cardType == "P") {
+						obj.zIndex = 10;
+						obj.screendata.y += (slotSize/10)*(objs.length-1);
+					} else {
+						obj.screendata.y += (slotSize/10)*k;
+						obj.zIndex = 1;
+
+					}
+				}
+			}
+		}
+	}
+
 	for(var i=0; i < my_table_e.childNodes.length; i++) {
 		var elm = my_table_e.childNodes[i];
 		var obj = table.recover(elm.battleId);
 		if(elm.style.left != obj.screendata.x || elm.style.top != obj.screendata.y) {
 			elm.style.left = obj.screendata.x;
 			elm.style.top = obj.screendata.y;
+			elm.style.zIndex = obj.zIndex;
 		}
 	}
+
 }
 
 function showNewDice(dice) {

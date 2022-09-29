@@ -26,6 +26,8 @@
 	text-align: center;
 	font-weight: bold;
 	font-size: 150%;
+    margin-top: 2;
+    margin-bottom: 2;
 }
 
 .card_body {
@@ -232,6 +234,10 @@ body {
 }
 */
 
+canvas {
+	margin-top: 0px;
+	margin-left: 0px;
+}
 #hist {
 	font-size: 200%;
 }

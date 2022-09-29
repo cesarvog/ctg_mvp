@@ -13,8 +13,8 @@ function startManager() {
         if(pair[0] == "room") room = pair[1]
     }
 
-    let socket = new WebSocket("wss://" + window.location.hostname + "/ws");
-    //let socket = new WebSocket("ws://" + window.location.hostname + ":5000/ws");
+    //let socket = new WebSocket("wss://" + window.location.hostname + "/ws");
+    let socket = new WebSocket("ws://" + window.location.hostname + ":5000/ws");
 
     socket.onerror = function(err) {
         console.log(err);
@@ -37,6 +37,7 @@ function persistInTable(data, s) {
         newData.cid = data.cid;
         newData.battleId = data.battleId;
         newData.screendata = data.screendata;
+        newData.slot = data.slot;
         data = newData;
     }
     s.send(prepare("persistInTable", data));
@@ -52,6 +53,7 @@ function moveInTable(data, s) {
         newData.cid = data.cid;
         newData.battleId = data.battleId;
         newData.screendata = data.screendata;
+        newData.slot = data.slot;
         data = newData;
     }
 
