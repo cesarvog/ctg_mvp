@@ -107,6 +107,12 @@ class Dice {
 		this.battleId = battleCardSequence++,
 		this.value = value;
 		this.type = t_dice;
+		if(player == "A") {
+			this.slot = {x: 2,y: 1};
+		} else {
+			this.slot = {x: 0,y: 1};
+		}
+
 	}
 }
 
@@ -721,7 +727,10 @@ function drawTable() {
 			moveInTable(obj, socket);
 		});
 	} else {
-		 c.childNodes[0].onmousedown = function(event) {
+		 var ce = c;
+		 var obj = table.recover(c.battleId);
+		 if(obj.type == t_card) ce = c.childNodes[0];
+		 ce.onmousedown = function(event) {
 				c.moving = true;
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
@@ -816,22 +825,27 @@ function refreshTable() {
 			if(objs == undefined) continue;
 			objs.sort((a, b) => (a.cardType > b.cardType) ? 1 : -1);
 
+			var qtdToken= 0;
+			var qtdCardResources = 0;
 			for(var k=0; k < objs.length; k++) {
 				var obj = objs[k];
 
-				if(obj.cardType != undefined) {
-					var p = getSlotPixelFromNumber(obj.slot.x, obj.slot.y);
-					obj.screendata.x = p.x;
-					obj.screendata.y = p.y;
+				var p = getSlotPixelFromNumber(obj.slot.x, obj.slot.y);
+				obj.screendata.x = p.x;
+				obj.screendata.y = p.y;
 
-					if(obj.cardType == "P") {
-						obj.zIndex = 10;
-						obj.screendata.y += (slotSize/10)*(objs.length-1);
-					} else {
-						obj.screendata.y += (slotSize/10)*k;
-						obj.zIndex = 1;
-
-					}
+				if(obj.type == t_token || obj.type == t_dice) {
+					obj.screendata.x += (getH()/20) *qtdToken;
+					qtdToken++;
+					obj.zIndex = 11;
+				} else if(obj.cardType == "P") {
+					obj.zIndex = 10;
+					var totalResouces = objs.reduce(countSlotResourceCards, 0);
+					obj.screendata.y += (slotSize/10)*(totalResouces);
+				} else if(obj.cardType != "P") {
+					obj.screendata.y += (slotSize/10)*qtdCardResources;
+					obj.zIndex = qtdCardResources;
+					qtdCardResources++;
 				}
 			}
 		}
@@ -847,6 +861,21 @@ function refreshTable() {
 		}
 	}
 
+}
+
+function countSlotCharacter(total, obj) {
+	if(obj.type == t_card && obj.cardType == "P") total++;
+	return total;
+}
+
+function countSlotResourceCards(total, obj) {
+	if(obj.type == t_card && obj.cardType != "P") total++;
+	return total;
+}
+
+function countSlotCounters(total, obj) {
+	if(obj.type == t_token || obj.type == t_dice) total++;
+	return total;
 }
 
 function showNewDice(dice) {
@@ -1087,6 +1116,13 @@ function addToken(id) {
 	
 	newObj.type = t_token;
 	newObj.battleId = battleCardSequence++,
+	newObj.slot = {};
+	if(player == "A") {
+		newObj.slot = {x: 2,y: 1};
+	} else {
+		newObj.slot = {x: 0,y: 1};
+	}
+
 	table.push(newObj);
 
 	drawTable();
