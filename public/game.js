@@ -94,11 +94,7 @@ class Card {
 		this.type = t_card;
 		this.cardType = cardType;
 		this.clazz = clazz;
-		if(player == "A") {
-			this.slot = {x: 2,y: 1};
-		} else {
-			this.slot = {x: 0,y: 1};
-		}
+		this.slot = {x: 2,y: 1};
 	};
 }
 
@@ -215,6 +211,11 @@ var handleMessage =function(action, data) {
 function reverseSlots(slot) {
 	if(slot.y == 0) slot.y = 2;
 	else if(slot.y == 2) slot.y = 0;
+
+	if(slot.y == 1) {
+		if(slot.x == 0) slot.x = 2;
+		else if (slot.x ==2) slot.x = 0;
+	}
 }
 
 /*
@@ -257,7 +258,6 @@ function start() {
 	me = new Me();
 	other = new Me();
 
-	drawGrid();
 	//remote
 	socket = startManager();
 	if(socket == undefined) {
@@ -276,6 +276,7 @@ function start() {
 function startBattle() {
 	generateDeckCards(me.my_deck_cards, 60);
 	getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
+	drawGrid(player);
 	
 	my_table_e = document.getElementById("table");
 	my_canvas_e = document.getElementById("canvas");

@@ -58,7 +58,9 @@ function getSlotPixelFromNumber(x, y) {
     return slot;
 }
 
-function drawGrid() {
+var blue = '#0090C0';
+var red = '#C06000'
+function drawGrid(player) {
     var s = getSlotSize();
     var canvas = document.getElementById("canvas");
     if(canvas.getContext) {
@@ -67,13 +69,28 @@ function drawGrid() {
         ctx.canvas.width  = getW();
         ctx.canvas.height = getH();
 
-        ctx.strokeStyle = '#e5e4e2';
-        for(var i=0; i<3; i++) {
+        if(player == "A") {
+            ctx.fillStyle = red;
+        } else {
+            ctx.fillStyle = blue;
+        }
+
+        var a = 0;
+        for(var i=0;  i<3; i++) {
             for(var j=0; j<3; j++) {
-                var slot = getSlotPixelFromNumber(i, j);
+                if(a == 4) {
+                    ctx.fillStyle = '#FFFFFF';
+                } else if(a > 4) {
+                    if(player == "A") ctx.fillStyle = blue;
+                    else ctx.fillStyle = red;
+                }
+
+                var slot = getSlotPixelFromNumber(j, i);
                 //ctx.fillRect(slot.x, slot.y, s, s);
-                //ctx.strokeStyle = 'green';
-                ctx.strokeRect(slot.x, slot.y, s.w, s.h);
+                //ctx.fillStyle = 'green';
+                //ctx.strokeRect(slot.x, slot.y, s.w, s.h);
+                ctx.fillRect(slot.x, slot.y, s.w, s.h);
+                a++;
             }
         }
     }
