@@ -381,6 +381,16 @@ function drawCardInHands(cardData) {
 }
 
 function paintCard(card, elem) {
+	//clean
+	var list = [];
+	for(var i=0; i < elem.classList.length; i++) {
+		if(!elem.classList[i].startsWith("card_type_")) {
+			list.push(elem.classList[i]);
+		}
+	}
+
+	elem.classList = list;
+
 	switch(card.cardType) {
 		case "P":
 			elem.classList.add("card_type_char");
@@ -390,6 +400,9 @@ function paintCard(card, elem) {
 			break;
 		case "E":
 			elem.classList.add("card_type_equip");
+			break;
+		case "T":
+			elem.classList.add("card_type_terrain");
 			break;
 	}
 }
@@ -843,9 +856,9 @@ function refreshTable() {
 				} else if(obj.cardType == "P") {
 					obj.zIndex = 10;
 					var totalResouces = objs.reduce(countSlotResourceCards, 0);
-					obj.screendata.y += (slotSize/10)*(totalResouces);
+					obj.screendata.y += (slotSize.h/10)*(totalResouces);
 				} else if(obj.cardType != "P") {
-					obj.screendata.y += (slotSize/10)*qtdCardResources;
+					obj.screendata.y += (slotSize.h/10)*qtdCardResources;
 					obj.zIndex = qtdCardResources;
 					qtdCardResources++;
 				}

@@ -207,6 +207,10 @@ p, div {
 	background-color: #6a949d;
 }
 
+.card_type_terrain {
+	background-color: #FAEE7E;
+}
+
 /* Animations to fade the snackbar in and out */
 @-webkit-keyframes fadein {
   from {bottom: 0; opacity: 0;}
