@@ -322,7 +322,6 @@ function startBattle() {
 	if(w > h) {
 		my_card_view_e.style.height = "80vh";
 		my_card_view_e.style.width = "calc(80vh * 0.6)";
-
 	}
 
 	addHist("Começou o jogo, você é o Jogador " + player + ", boa sorte!", true);
@@ -383,7 +382,12 @@ function drawCardInHands(cardData) {
 
 	c.onclick = f;
 	c.addEventListener("touchstart", f);
-	var text = "<p class='card_name'> " + cardData.name + " </p>";
+	var text = "";
+	if(isMobile) {
+		text = "<p class='card_name'> " + cardData.name + " </p>";
+	} else {
+		text = "<p class='card_name'> " + cardData.name + " </p>";
+	}
 	if(cardData.cardType == "P") {
 		text += "<div class='card_atkdef'>" + cardData.atk + "/" + cardData.def + "</div>"
 	}
@@ -424,7 +428,13 @@ function viewCard(cardData) {
 
 	var cd = table.recover(cardData.battleId);
 	if(cd != undefined) cardData = cd;
-	var text = "<p class='card_name'> " + cardData.name + " </p>";
+	var text="";
+	if(isMobile) {
+		text = "<p class='card_name'> " + cardData.name + " </p>";
+	} else {
+		text = "<p class='card_name'> " + cardData.name + " </p>";
+	}
+
 	text += "<div class='card_body'>";
 	if(cardData.cardType == "P") {
 		text += "<p class='card_hab'>" + cardData.clazz + "</p>"
@@ -637,7 +647,13 @@ function drawCard(c) {
 	}
 
 	var cd = table.recover(c.battleId);
-	var text = "<p class='card_name'> " + cd.name + " </p>";
+	var text = "";
+	if(isMobile) {
+		text = "<p class='card_name_mobile'> " + cd.name + " </p>";
+	} else {
+		text = "<p class='card_name'> " + cd.name + " </p>";
+	}
+
 	if(cd.cardType == "P") {
 		text += "<div class='card_atkdef'>" + cd.atk + "/" + cd.def + "</div>"
 	}
