@@ -58,6 +58,7 @@ const t_fire = {"name" : "fire", "imgPath" : "img/tokens/fire.jpg"};
 const t_frost = {"name"  : "frost", "imgPath" : "img/tokens/frost.png"};
 const t_poison = {"name" : "poison", "imgPath": "img/tokens/poison.png"};
 const t_1 = {"name" : "1", "imgPath" : "img/tokens/1.png"};
+const t_blood = {"name" : "blood", "imgPath" : "img/tokens/blood.png"};
 
 //remote
 var socket = "";
@@ -186,6 +187,16 @@ var handleMessage =function(action, data) {
 		refreshTable();
 		break;
 	case "addToken":
+		if(data.slot != undefined) {
+			reverseSlots(data.slot);
+			var p = getSlotPixelFromNumber(data.slot.x, data.slot.y);
+			data.screendata.x = p.x;
+			data.screendata.y = p.y;
+		} else {
+			reverseY(data);
+			data.screendata.x = data.screendata.x;
+			data.screendata.y = data.screendata.y;
+		}
 		addTokenRemote(data);
 		break;
 	case "throwCoin":
@@ -382,15 +393,10 @@ function drawCardInHands(cardData) {
 }
 
 function paintCard(card, elem) {
-	//clean
-	var list = [];
-	for(var i=0; i < elem.classList.length; i++) {
-		if(!elem.classList[i].startsWith("card_type_")) {
-			list.push(elem.classList[i]);
-		}
-	}
-
-	elem.classList = list;
+	elem.classList.remove("card_type_char");
+	elem.classList.remove("card_type_item");
+	elem.classList.remove("card_type_equip");
+	elem.classList.remove("card_type_terrain");
 
 	switch(card.cardType) {
 		case "P":
@@ -715,8 +721,12 @@ function drawTable() {
 	c.style.left = table[i].screendata.x + "px";
 	c.battleId = table[i].battleId;
 
+	var ce = c;
+	var obj = table.recover(c.battleId);
+	if(obj.type == t_card) ce = c.childNodes[0];
+
 	if(isMobile) {
-		c.childNodes[0].addEventListener("touchmove", function(event) {
+		ce.addEventListener("touchmove", function(event) {
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
 				topZIndex++;
@@ -1008,12 +1018,9 @@ function turnCardRemote(battleId) {
 	for(var i=0; i < persisteds.length; i++) {
 		if(battleId == persisteds[i].battleId) {
 			if(persisteds[i].classList.contains("card_table_turned")) {
-				persisteds[i].removeAttribute("class");
-				persisteds[i].classList.add("card_table");
+				persisteds[i].classList.remove('card_table_turned');
 			} else {
-				persisteds[i].removeAttribute("class");
-				persisteds[i].classList.add("card_table_turned");
-				persisteds[i].classList.add("card_table");
+				persisteds[i].classList.add('card_table_turned');
 			}
 			paintCard(table.recover(battleId), persisteds[i])
 			break;
@@ -1027,13 +1034,10 @@ function turnCard() {
 	for(var i=0; i < persisteds.length; i++) {
 		if(id == persisteds[i].battleId) {
 			if(persisteds[i].classList.contains("card_table_turned")) {
-				persisteds[i].removeAttribute("class");
-				persisteds[i].classList.add("card_table");
+				persisteds[i].classList.remove('card_table_turned');
 				turnCardInTable(envelopeInfo(persisteds[i].battleId), socket)
 			} else {
-				persisteds[i].removeAttribute("class");
-				persisteds[i].classList.add("card_table_turned");
-				persisteds[i].classList.add("card_table");
+				persisteds[i].classList.add('card_table_turned');
 				turnCardInTable(envelopeInfo(persisteds[i].battleId), socket)
 			}
 			paintCard(table.recover(id), persisteds[i])
@@ -1124,6 +1128,9 @@ function addToken(id) {
 		case t_1.name:
 			obj = t_1; 
 			break;
+		case t_blood.name:
+			obj = t_blood; 
+			break;
 	}
 
 	var newObj = {};
@@ -1133,15 +1140,12 @@ function addToken(id) {
 	newObj.type = t_token;
 	newObj.battleId = battleCardSequence++,
 	newObj.slot = {};
-	if(player == "A") {
-		newObj.slot = {x: 2,y: 1};
-	} else {
-		newObj.slot = {x: 0,y: 1};
-	}
+	newObj.slot = {x: 2,y: 1};
 
 	table.push(newObj);
 
 	drawTable();
+	refreshTable();
 	addTokenInTable(newObj, socket);
 	updateCtx(C_TABLE);
 	updateIcons();
@@ -1157,8 +1161,16 @@ function showTokens() {
 function buyCard() {
 	var buyed = me.my_deck_cards.pop();
 	me.my_hand_cards.push(buyed);
-	addHist("Player A comprou uma carta");
-	playSnackbar("Player A comprou uma carta");
+	addHist("Player " + player + " comprou uma carta");
+	playSnackbar("Player " + player + " comprou uma carta");
 
 	showHandCards();
+}
+
+function rollDice(s) {
+	var num = Math.floor(Math.random() * s) + 1;
+	var text = "Player " + player + " tirou " + num + " no dado";
+	addHist(text);
+	playSnackbar(text);
+	throwCoinInTable(envelopeInfo(text), socket);
 }
