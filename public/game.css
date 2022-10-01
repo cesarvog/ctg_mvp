@@ -261,6 +261,7 @@ p, div {
 body {
   background-image: url(img/bg/table-grass.jpg);
   background-repeat: repeat;
+  overflow-y: hidden;
 }
 
 
