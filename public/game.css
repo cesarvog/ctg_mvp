@@ -111,6 +111,7 @@
 	background-size: cover;
 	width: 5vh;
 	height: 5vh;
+	border: 2px solid;	
 }
 .dice_table text {
     left: 40%;
@@ -140,9 +141,12 @@
 	width: 30vw;
 	font-size: 40px;
 }
-#newdice img {
-	padding-left: 8vw;
+
+#borderDice {
+	border: 1px solid;	
+	display: inline-block;
 }
+
 #newdice text {
 	position: absolute;
 	left: 119;
@@ -253,11 +257,12 @@ p, div {
   to {bottom: 0; opacity: 0;}
 }
 
-/*
+
 body {
-  background-image: url(img/bg/table.jpg);
+  background-image: url(img/bg/table-grass.jpg);
+  background-repeat: repeat;
 }
-*/
+
 
 canvas {
 	margin-top: 0px;

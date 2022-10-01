@@ -14,7 +14,9 @@
 	<div id="hand" style="overflow-y:scroll;overflow-y:auto;height:100%"></div>
 	<div id="hist"><ul></ul></div>
 	<div id="newdice">
-			  <img id="newdice_img" src="img/newdice.png"></img>
+			  <div style="margin-left: 8vw;">
+			  <div id="borderDice"><img id="newdice_img" src="img/newdice.png"></img></div>
+			  </div>
 			  <text>1</text>
 			  <button class="inc" type="button" onclick="changeValueNewDice(-1);">-</button>
 			  <button class="inc" type="button" onclick="changeValueNewDice(1);">+</button>
@@ -22,6 +24,7 @@
 			  <button id="d_create" class="create" type="button" onclick="createNewDice();">Criar</button>
 			  <button id="d_cancel" class="create" type="button" onclick="cancelNewDice(this);">Cancelar</button>
 			  <button id="d_delete" class="create" style="display: none;" type="button" onclick="deleteDice(this);">Excluir</button>
+			  <button class="inc" type="button" onclick="changeColor();">Cor</button>
 	</div>
 	<div id="card_view" class="card_view">
 		

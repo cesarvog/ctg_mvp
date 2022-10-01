@@ -101,10 +101,11 @@ class Card {
 }
 
 class Dice {
-	constructor(value) {
+	constructor(value, color) {
 		this.battleId = battleCardSequence++,
 		this.value = value;
 		this.type = t_dice;
+		this.color = color;
 		if(player == "A") {
 			this.slot = {x: 2,y: 1};
 		} else {
@@ -586,7 +587,7 @@ function generateDeckCards(deck, numCards) {
 		if(i < 5) {
 			rand = Math.floor(Math.random() * 16);
 		} else {
-			rand = Math.floor(Math.random() * qttCards);
+			rand = Math.floor(Math.random() * cards.length);
 			if(cards[rand].type == "P") {
 				i--;
 				continue;
@@ -688,7 +689,9 @@ function drawDice(view, dice) {
 			setTimeout(function() { view.myClick = undefined;
 			}, 2000);
 		})
-	}view.innerHTML = "<text>" + dice.value + "</text>";
+	}
+	view.style.borderColor = dice.color;
+	view.innerHTML = "<text>" + dice.value + "</text>";
 	view.value = dice.value;
 }
 
@@ -743,12 +746,8 @@ function drawTable() {
 	c.style.left = table[i].screendata.x + "px";
 	c.battleId = table[i].battleId;
 
-	var ce = c;
-	var obj = table.recover(c.battleId);
-	if(obj.type == t_card) ce = c.childNodes[0];
-
 	if(isMobile) {
-		ce.addEventListener("touchmove", function(event) {
+		c.addEventListener("touchmove", function(event) {
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
 				topZIndex++;
@@ -765,20 +764,23 @@ function drawTable() {
 			console.log("parou (touchend)");
 			var obj = table.recover(c.battleId);
 
-			var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
-			obj.slot = s;
-			var p = getSlotPixelFromNumber(s.x, s.y);
-			obj.screendata.x = p.x;
-			obj.screendata.y = p.y;
+			if(diff(obj.screendata.x, parseInt(c.style.left)) > 50
+				 || diff(obj.screendata.y, parseInt(c.style.top)) > 50) {
+				var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
+				obj.slot = s;
+				var p = getSlotPixelFromNumber(s.x, s.y);
+				obj.screendata.x = p.x;
+				obj.screendata.y = p.y;
+			} else {
+				c.style.left = obj.screendata.x;
+				c.style.top = obj.screendata.y;
+			}
 			
 			refreshTable();
 			moveInTable(obj, socket);
 		});
 	} else {
-		 var ce = c;
-		 var obj = table.recover(c.battleId);
-		 if(obj.type == t_card) ce = c.childNodes[0];
-		 ce.onmousedown = function(event) {
+		 c.onmousedown = function(event) {
 				c.moving = true;
 				console.log("moving persisted: " + c.battleId);
 				c.style.zIndex = topZIndex+1;
@@ -816,15 +818,23 @@ function drawTable() {
 						return;
 					}
 					var obj = table.recover(c.battleId);
-					var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
-					obj.slot = s;
-					var p = getSlotPixelFromNumber(s.x, s.y);
-					obj.screendata.x = p.x;
-					obj.screendata.y = p.y;
+					//useful move?
+					if(diff(obj.screendata.x, parseInt(c.style.left)) > 50
+					 || diff(obj.screendata.y, parseInt(c.style.top)) > 50) {
 
-					refreshTable();
-					moveInTable(obj, socket);
-					this.moving = false;
+						var s = getSlotNumberFromPixel(parseInt(c.style.left), parseInt(c.style.top));
+						obj.slot = s;
+						var p = getSlotPixelFromNumber(s.x, s.y);
+						obj.screendata.x = p.x;
+						obj.screendata.y = p.y;
+
+						refreshTable();
+						moveInTable(obj, socket);
+						this.moving = false;
+					 } else {
+						c.style.left = obj.screendata.x;
+						c.style.top = obj.screendata.y;
+					 }
 				};
 		}
 	};
@@ -838,14 +848,27 @@ function drawTable() {
 	updateScene();
 }
 
+function diff (num1, num2) {
+  if (num1 > num2) {
+    return num1 - num2
+  } else {
+    return num2 - num1
+  }
+}
+
 function refreshTable() {
 	var dices = document.getElementsByClassName("dice_table");
 	for(var i=0; i < dices.length; i++) {
 		var dice = dices[i];
 		for(var j=0; j<table.length; j++) {
-			if(table[j].battleId == dice.battleId && dice.value != table[j].value) {
-				dice.value = table[j].value;
-				dice.getElementsByTagName("text")[0].innerHTML = dice.value;
+			if(table[j].battleId == dice.battleId) {
+				if(dice.value != table[j].value) {
+					dice.value = table[j].value;
+					dice.getElementsByTagName("text")[0].innerHTML = dice.value;
+				}
+				if(dice.style.borderColor != table[j].color) {
+					dice.style.borderColor = table[j].color;
+				}
 			}
 		}
 	}
@@ -939,8 +962,10 @@ function showNewDice(dice) {
 		my_dice_e.getElementsByTagName("text")[0].innerText = dice.value;
 		my_dice_e.battleId = dice.battleId;
 		my_dice_e.childNodes[15].style.display = "block";
+		document.getElementById("borderDice").style.borderColor = dice.color;
 	} else {
 		my_dice_e.childNodes[15].style.display = "none";
+		document.getElementById("borderDice").style.borderColor = diceColor;
 	}
 
 	var elems = my_dice_e.getElementsByTagName("button");
@@ -952,6 +977,8 @@ function showNewDice(dice) {
 			elem.innerHTML = label;
 		}
 	}
+
+
 	updateCtx(C_NEW_DICE);
 	updateIcons();
 	updateScene();
@@ -959,6 +986,7 @@ function showNewDice(dice) {
 
 function changeValueDiceRemote(data) {
 	table.recover(data.battleId).value = data.value;
+	table.recover(data.battleId).color = data.color;
 	refreshTable();
 }
 
@@ -977,6 +1005,9 @@ function cancelNewDice(elem) {
 		var newv = elem.parentElement.getElementsByTagName("text")[0].innerText;
 		dice.value = newv;
 
+		dice.color = diceColor;
+
+		diceColor = "red";
 
 		addHist("Player " + player + " mudou o valor de um dado de " + old + " para " + newv);
 		updateDiceRemote(dice, socket);
@@ -1027,7 +1058,8 @@ function deleteFromTable(battleId) {
 
 function createNewDice() {
 	var value = my_dice_e.getElementsByTagName("text")[0].innerText;
-	var dice = new Dice(value);
+	var dice = new Dice(value, diceColor);
+	diceColor = "red";
 
 	posTable(dice);
 	table.push(dice);
@@ -1218,4 +1250,23 @@ function take() {
 	updateCtx(C_TABLE);
 	updateIcons();
 	updateScene();
+}
+
+var diceColor = "red";
+function changeColor() {
+	switch(diceColor) {
+		case "red":
+			diceColor = "blue";
+			break;
+		case "blue":
+			diceColor = "yellow";
+			break;
+		case "yellow":
+			diceColor = "green";
+			break;
+		case "green":
+			diceColor = "red";
+			break;
+	}
+	document.getElementById("borderDice").style.borderColor = diceColor;
 }
