@@ -32,6 +32,7 @@ var icon_hand_e = "";
 var icon_dice_e = "";
 var icon_coin_e = "";
 var icon_trash_e= "";
+var icon_take_e = "";
 var icon_turn_e = "";
 var icon_tokens_e = "";
 var icon_deck_e = "";
@@ -301,6 +302,7 @@ function startBattle() {
 	icon_dice_e = document.getElementById("dice_icon");
 	icon_play_e = document.getElementById("play_icon");
 	icon_hand_e = document.getElementById("hand_icon");
+	icon_take_e = document.getElementById("take_icon");
 	icon_turn_e = document.getElementById("turn_icon");
 	icon_deck_e = document.getElementById("deck_icon");
 	icon_coin_e = document.getElementById("coin_icon");
@@ -309,7 +311,7 @@ function startBattle() {
 	icon_table_e = document.getElementById("table_icon");
 	icon_buy_e = document.getElementById("buy_icon");
 
-	iconsList = [icon_play_e, icon_hand_e, icon_dice_e, icon_turn_e, icon_hist_e, icon_table_e, icon_coin_e, icon_deck_e, icon_tokens_e, icon_buy_e];
+	iconsList = [icon_play_e, icon_hand_e, icon_dice_e, icon_take_e, icon_turn_e, icon_hist_e, icon_table_e, icon_coin_e, icon_deck_e, icon_tokens_e, icon_buy_e];
 
 	table.recover = function(battleId) {
 		for(var i=0; i < this.length; i++) {
@@ -469,7 +471,7 @@ function updateIcons() {
 	}else if(my_context === C_NEW_DICE) {
 		displayIcons();
 	}else if(my_context === C_CARD_VIEW_PERSISTED) {
-		displayIcons(icon_hand_e, icon_turn_e, icon_table_e, icon_table_e);
+		displayIcons(icon_hand_e, icon_take_e, icon_turn_e, icon_table_e, icon_table_e);
 	}else if(my_context === C_HIST) {
 		displayIcons(icon_hand_e, icon_table_e);
 	}else if(my_context === C_TOKEN) {
@@ -585,6 +587,10 @@ function generateDeckCards(deck, numCards) {
 			rand = Math.floor(Math.random() * 16);
 		} else {
 			rand = Math.floor(Math.random() * qttCards);
+			if(cards[rand].type == "P") {
+				i--;
+				continue;
+			}
 		}
 
 		var newCard = new Card(
@@ -896,6 +902,11 @@ function refreshTable() {
 	for(var i=0; i < my_table_e.childNodes.length; i++) {
 		var elm = my_table_e.childNodes[i];
 		var obj = table.recover(elm.battleId);
+		if(obj == undefined) {
+			//removed
+			elm.remove();
+			continue;
+		}
 		if(elm.style.left != obj.screendata.x || elm.style.top != obj.screendata.y) {
 			elm.style.left = obj.screendata.x;
 			elm.style.top = obj.screendata.y;
@@ -1189,4 +1200,22 @@ function rollDice(s) {
 	addHist(text);
 	playSnackbar(text);
 	throwCoinInTable(envelopeInfo(text), socket);
+}
+
+function take() {
+	var battleId = my_card_view_e.battleId;
+
+	for(var i=0; i < table.length; i++) {
+		if(table[i].battleId == battleId) {
+			table[i].persisted = false;
+			me.my_hand_cards.push(table[i]);
+			table.splice(i, 1);
+			break;
+		}
+	}
+
+	refreshTable();
+	updateCtx(C_TABLE);
+	updateIcons();
+	updateScene();
 }
