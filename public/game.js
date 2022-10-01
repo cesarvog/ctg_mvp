@@ -581,9 +581,11 @@ function generateDeckCards(deck, numCards) {
 
 		var rand = 0;
 		if(i < 5) {
-			rand = Math.floor(Math.random() * 16);
+			//rand = Math.floor(Math.random() * 16);
+			rand = Math.floor(Math.random() * 13) + 51;
 		} else {
-			rand = Math.floor(Math.random() * cards.length);
+			//rand = Math.floor(Math.random() * cards.length);
+			rand = Math.floor(Math.random() * 49) + 51;
 			if(cards[rand].type == "P") {
 				i--;
 				continue;
