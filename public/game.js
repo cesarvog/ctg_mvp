@@ -106,11 +106,7 @@ class Dice {
 		this.value = value;
 		this.type = t_dice;
 		this.color = color;
-		if(player == "A") {
-			this.slot = {x: 2,y: 1};
-		} else {
-			this.slot = {x: 0,y: 1};
-		}
+		this.slot = {x: 2,y: 1};
 
 	}
 }
@@ -906,7 +902,8 @@ function refreshTable() {
 				obj.screendata.y = p.y;
 
 				if(obj.type == t_token || obj.type == t_dice) {
-					obj.screendata.x += (getH()/20) *qtdToken;
+					obj.screendata.x += slotSize.w - (getW()/22);
+					obj.screendata.y += qtdToken*(getH()/21);
 					qtdToken++;
 					obj.zIndex = 11;
 				} else if(obj.cardType == "P") {
@@ -930,6 +927,16 @@ function refreshTable() {
 			elm.remove();
 			continue;
 		}
+		if(obj.type == t_token && obj.slot.x == 1 && obj.slot.y == 1) {
+			for(var j=0; j < table.length; j++) {
+				if(table[j].battleId == obj.battleId) {
+					table.splice(j, 1);
+					elm.remove();
+					break;
+				}
+			}
+		}
+
 		if(elm.style.left != obj.screendata.x || elm.style.top != obj.screendata.y) {
 			elm.style.left = obj.screendata.x;
 			elm.style.top = obj.screendata.y;
@@ -1170,6 +1177,7 @@ function addTokenRemote(data) {
 	table.push(data);
 
 	drawTable();
+	refreshTable();
 }
 
 function addToken(id) {
