@@ -644,11 +644,11 @@ function generateDeckCards(deck, numCards) {
 	for(var i=0; i < numCards; i++) {
 		var rand = 0;
 		if(i < 5) {
-			rand = Math.floor(Math.random() * heroes.length) -1;
+			rand = Math.floor(Math.random() * heroes.length);
 			var newCard = forgeCard(rand, undefined, heroes);
 			deck.push(newCard);
 		} else {
-			rand = Math.floor(Math.random() * resources.length) -1;
+			rand = Math.floor(Math.random() * resources.length);
 			var newCard = forgeCard(rand, undefined, resources);
 			deck.push(newCard);
 		}
