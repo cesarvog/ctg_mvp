@@ -13,8 +13,8 @@ function startManager() {
         if(pair[0] == "room") room = pair[1]
     }
 
-   //let socket = new WebSocket("wss://" + window.location.hostname + "/ws");
-    let socket = new WebSocket("ws://" + window.location.hostname + ":5000/ws");
+   let socket = new WebSocket("wss://" + window.location.hostname + "/ws");
+    //let socket = new WebSocket("ws://" + window.location.hostname + ":5000/ws");
 
     socket.onerror = function(err) {
         console.log(err);
