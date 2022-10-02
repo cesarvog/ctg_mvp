@@ -125,6 +125,7 @@
 	right: 20px;
 	bottom: 20px;
 	z-index: 1000;
+	background-color: rgba(255, 255, 255, 0.6);
 }
 
 #newdice {
@@ -271,4 +272,8 @@ canvas {
 }
 #hist {
 	font-size: 200%;
+	height: 100%;
+	overflow-y: auto;
+	overflow-x: hidden;
+	background-color: rgba(255, 255, 255, 0.6);
 }

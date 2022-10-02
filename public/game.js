@@ -35,6 +35,7 @@ var icon_trash_e= "";
 var icon_take_e = "";
 var icon_turn_e = "";
 var icon_tokens_e = "";
+var icon_dead_e = "";
 var icon_deck_e = "";
 var icon_hist_e = "";
 var icon_table_e = "";
@@ -72,6 +73,7 @@ class Me {
 	this.my_view_card = '';
 	this.my_hand_cards = [];
 	this.my_deck_cards = [];
+	this.my_dead_cards = [];
 	}
 }
 
@@ -97,6 +99,7 @@ class Card {
 		this.cardType = cardType;
 		this.clazz = clazz;
 		this.slot = {x: 2,y: 1};
+		this.gamePhase = "";
 	};
 }
 
@@ -283,8 +286,24 @@ function start() {
 }
 
 function startBattle() {
-	generateDeckCards(me.my_deck_cards, 60);
-	getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
+    let paramString = window.location.href.split('?')[1];
+    let queryString = new URLSearchParams(paramString);
+
+	var deck = "";
+    for (let pair of queryString.entries()) {
+        if(pair[0] == "deck") deck = pair[1]
+    }
+
+	if(deck == "") {
+		generateDeckCards(me.my_deck_cards, 60);
+		getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
+		me.my_deck_cards.sort(function(a, b) {
+			return Math.random() < 0.5;
+		});
+	} else {
+		generateMountedDeckCards(me.my_deck_cards, deck);
+		getCardFromDeck(me.my_deck_cards, me.my_hand_cards, 7);
+	}
 	drawGrid(player);
 	
 	my_table_e = document.getElementById("table");
@@ -301,6 +320,7 @@ function startBattle() {
 	icon_hand_e = document.getElementById("hand_icon");
 	icon_take_e = document.getElementById("take_icon");
 	icon_turn_e = document.getElementById("turn_icon");
+	icon_dead_e = document.getElementById("dead_icon");
 	icon_deck_e = document.getElementById("deck_icon");
 	icon_coin_e = document.getElementById("coin_icon");
 	icon_tokens_e = document.getElementById("token_icon");
@@ -308,7 +328,7 @@ function startBattle() {
 	icon_table_e = document.getElementById("table_icon");
 	icon_buy_e = document.getElementById("buy_icon");
 
-	iconsList = [icon_play_e, icon_hand_e, icon_dice_e, icon_take_e, icon_turn_e, icon_hist_e, icon_table_e, icon_coin_e, icon_deck_e, icon_tokens_e, icon_buy_e];
+	iconsList = [icon_play_e, icon_hand_e, icon_dice_e, icon_take_e, icon_turn_e, icon_hist_e, icon_table_e, icon_coin_e, icon_dead_e, icon_deck_e, icon_tokens_e, icon_buy_e];
 
 	table.recover = function(battleId) {
 		for(var i=0; i < this.length; i++) {
@@ -339,6 +359,35 @@ function showDeck() {
 	}
 
 	resortCards = true;
+	updateCtx(C_HAND_CARDS);
+	updateIcons();
+	updateScene();
+}
+
+function showDead() {
+	if(my_context == C_CARD_VIEW_PERSISTED) {
+		for(var i=0; i < table.length; i++) {
+			if(table[i].battleId == my_card_view_e.battleId) {
+				me.my_dead_cards.push(table[i]);
+				table[i].gamePhase = "dead";
+				table.splice(i, 1);
+				break;
+			}
+		}
+		refreshTable();
+		updateCtx(C_TABLE);
+		updateIcons();
+		updateScene();
+		return;
+	}
+
+	while (my_hand_cards_e.firstChild) {
+		my_hand_cards_e.removeChild(hand.lastChild);
+	}
+	for(var i=0; i < me.my_dead_cards.length; i++) {
+		my_hand_cards_e.appendChild(drawCardInHands(me.my_dead_cards[i]))
+	}
+
 	updateCtx(C_HAND_CARDS);
 	updateIcons();
 	updateScene();
@@ -460,7 +509,7 @@ function viewCard(cardData) {
 
 function updateIcons() {
 	if(my_context === C_TABLE) {
-		displayIcons(icon_coin_e, icon_deck_e, icon_hand_e, icon_hist_e, icon_dice_e, icon_tokens_e, icon_buy_e);
+		displayIcons(icon_coin_e, icon_dead_e, icon_deck_e, icon_hand_e, icon_hist_e, icon_dice_e, icon_tokens_e, icon_buy_e);
 	}else if(my_context === C_HAND_CARDS) {
 		displayIcons(icon_hand_e, icon_table_e);
 	}else if(my_context === C_CARD_VIEW) {
@@ -468,7 +517,7 @@ function updateIcons() {
 	}else if(my_context === C_NEW_DICE) {
 		displayIcons();
 	}else if(my_context === C_CARD_VIEW_PERSISTED) {
-		displayIcons(icon_hand_e, icon_take_e, icon_turn_e, icon_table_e, icon_table_e);
+		displayIcons(icon_dead_e, icon_hand_e, icon_take_e, icon_turn_e, icon_table_e, icon_table_e);
 	}else if(my_context === C_HIST) {
 		displayIcons(icon_hand_e, icon_table_e);
 	}else if(my_context === C_TOKEN) {
@@ -574,37 +623,60 @@ function removeCard(deck, battleCardId) {
 	});
 }
 
+function generateMountedDeckCards(deck, str) {
+	str = str.replace("#", "");
+	var ids = str.split(",");
+	for(var i=0; i < ids.length; i++) {
+		deck.push(forgeCard(undefined, ids[i], cards));
+	}
+}
+
 function generateDeckCards(deck, numCards) {
 	var qttCards = cards.length;
 
-	for(var i=0; i < numCards; i++) {
+	var heroes = cards.filter(function(c) {
+		return c.type == "P";
+	});
+	var resources = cards.filter(function(c){
+		return c.type != "P";
+	});
 
+	for(var i=0; i < numCards; i++) {
 		var rand = 0;
 		if(i < 5) {
-			//rand = Math.floor(Math.random() * 16);
-			rand = Math.floor(Math.random() * 13) + 51;
+			rand = Math.floor(Math.random() * heroes.length) -1;
+			var newCard = forgeCard(rand, undefined, heroes);
+			deck.push(newCard);
 		} else {
-			//rand = Math.floor(Math.random() * cards.length);
-			rand = Math.floor(Math.random() * 49) + 51;
-			if(cards[rand].type == "P") {
-				i--;
-				continue;
-			}
+			rand = Math.floor(Math.random() * resources.length) -1;
+			var newCard = forgeCard(rand, undefined, resources);
+			deck.push(newCard);
+		}
+	}
+}
+function forgeCard(num, id, pool) {
+		var c = {};
+		if(id == undefined) {
+			c = pool[num];
+			console.log("Forging num " + num);
+		} else {
+			c = pool.filter(function(e){ return e.cid == id; })[0];
+			console.log("Forging id " + id);
 		}
 
 		var newCard = new Card(
-				cards[rand].cid,
+				c.cid,
 			   '',
-				cards[rand].name,
-				cards[rand].habs,
-				cards[rand].atk,
-				cards[rand].def,
-				cards[rand].type,
-				cards[rand].class);
+				c.name,
+				c.habs,
+				c.atk,
+				c.def,
+				c.type,
+				c.class);
 		newCard.owner = myId;
-		deck.push(newCard);
-	}
+			return newCard;
 }
+
 
 function getCardFromDeck(deck, hand, num) {
 	//get chars
@@ -1247,11 +1319,18 @@ function rollDice(s) {
 function take() {
 	var battleId = my_card_view_e.battleId;
 
-	for(var i=0; i < table.length; i++) {
-		if(table[i].battleId == battleId) {
-			table[i].persisted = false;
-			me.my_hand_cards.push(table[i]);
-			table.splice(i, 1);
+	var local = [];
+	if(table.recover(battleId) == undefined) {
+		local = me.my_dead_cards;
+	} else {
+		local = table;
+	}
+
+	for(var i=0; i < local.length; i++) {
+		if(local[i].battleId == battleId) {
+			local[i].persisted = false;
+			me.my_hand_cards.push(local[i]);
+			local.splice(i, 1);
 			break;
 		}
 	}
